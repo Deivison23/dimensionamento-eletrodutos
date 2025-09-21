@@ -337,8 +337,9 @@ if st.button("⚙️ Calcular eletroduto"):
 # --- Reset: remover chaves dos widgets e limpar a lista ---
 st.markdown("---")
 if st.button("🔄 Novo Cálculo"):
-    st.session_state.condutores_lista = []
-    st.session_state.clear()
+    for k in ["tipo_condutor", "bitola", "quantidade", "condutores_lista"]:
+        if k in st.session_state:
+            del st.session_state[k]
     # REMOVER as chaves que estão ligadas aos widgets para que, ao rerun, os widgets iniciem com os defaults
     st.rerun()
     
@@ -352,3 +353,4 @@ if st.button("🔄 Novo Cálculo"):
 
 
 st.markdown("<hr><p style='text-align: center; color: gray;'>Desenvolvido por Deivison Dias ⚡<p/>", unsafe_allow_html=True)
+
