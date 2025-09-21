@@ -292,7 +292,7 @@ st.selectbox("Seção transversal mm² (bitola)", options=bitolas_disponiveis, k
 # quantidade controlada
 if "quantidade" not in st.session_state:
     st.session_state.quantidade = 1
-st.number_input("Quantidade", min_value=1, step=1, value=st.session_state.quantidade, key="quantidade")
+st.number_input("Quantidade", min_value=1, key="quantidade")
 
 # --- AÇÃO: adicionar condutor ---
 if st.button("➕ Adicionar condutor"):
@@ -303,8 +303,22 @@ if st.button("➕ Adicionar condutor"):
 # --- Mostrar lista adicionada (desempacotar 3 valores) ---
 if st.session_state.condutores_lista:
     st.markdown("### 📋 Condutores adicionados")
-    for tipo, b, q in st.session_state.condutores_lista:
-        st.write(f" - {q} x {b} mm² ({tipo})")
+    #for tipo, b, q in st.session_state.condutores_lista:
+        #st.write(f" - {q} x {b} mm² ({tipo})")
+
+# Exibir tabela com botão de remover
+for idx, (tipo, bitola, quantidade) in enumerate(st.session_state.condutores_lista):
+    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+    with col1:
+        st.write(tipo)
+    with col2:
+        st.write(f"{bitola} mm²")
+    with col3:
+        st.write(f"{quantidade} un.")
+    with col4:
+        if st.button("❌", key=f"remove_{idx}"):
+            st.session_state.condutores_lista.pop(idx)
+            st.rerun()
 
 # --- Calcular eletroduto somando todos os itens da lista ---
 if st.button("⚙️ Calcular eletroduto"):
@@ -340,6 +354,7 @@ if st.button("🔄 Novo Cálculo"):
     for k in ["tipo_condutor", "bitola", "quantidade", "condutores_lista"]:
         if k in st.session_state:
             del st.session_state[k]
+            #st.session_state.condutores_lista = []
     # REMOVER as chaves que estão ligadas aos widgets para que, ao rerun, os widgets iniciem com os defaults
     st.rerun()
     
@@ -351,6 +366,4 @@ if st.button("🔄 Novo Cálculo"):
 # =========================    
 
 
-
 st.markdown("<hr><p style='text-align: center; color: gray;'>Desenvolvido por Deivison Dias ⚡<p/>", unsafe_allow_html=True)
-
