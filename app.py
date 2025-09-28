@@ -87,14 +87,22 @@ if not st.session_state.get("logged_in", False):
 #===========================
 
 eletrodutos = [
-    {"polegada": '3/4"', "diametro_mm": 21.34, "area_total": 285.0, "area_util": 114.0},
-    {"polegada": '1"', "diametro_mm": 26.67, "area_total": 445.0, "area_util": 178.0},
-    {"polegada": '1 1/4"', "diametro_mm": 42.16, "area_total": 701.0, "area_util": 280.0},
-    {"polegada": '1 1/2"', "diametro_mm": 48.26, "area_total": 864.0, "area_util": 346.0},
-    {"polegada": '2"', "diametro_mm": 60.33, "area_total": 1380.0, "area_util": 552.0},
-    {"polegada": '2 1/2"', "diametro_mm": 73.03, "area_total": 2090.0, "area_util": 836.0},
-    {"polegada": '3"', "diametro_mm": 88.9 , "area_total": 3100.00, "area_util": 1240.0},
-    {"polegada": '4"', "diametro_mm": 114.3, "area_total": 5370.0, "area_util": 2148.0}
+    {"polegada": '3/4"', "diametro_mm": 19.05, "area_total": 285.02,
+     "area_ocupavel53":151.06, "area_ocupavel31": 88.36, "area_ocupavel40": 114.0},
+    {"polegada": '1"', "diametro_mm": 25.4, "area_total": 506.71,
+      "area_ocupavel53":268.55, "area_ocupavel31": 157.08, "area_ocupavel40": 202.68},
+    {"polegada": '1 1/4"', "diametro_mm": 31.75, "area_total": 791.73,
+      "area_ocupavel53":419.62, "area_ocupavel31": 245.44, "area_ocupavel40": 316.69},
+    {"polegada": '1 1/2"', "diametro_mm": 38.1, "area_total": 1140.09,
+      "area_ocupavel53":604.25, "area_ocupavel31": 353.43, "area_ocupavel40": 456.04},
+    {"polegada": '2"', "diametro_mm": 50.8, "area_total": 2026.83,
+      "area_ocupavel53":1074.22, "area_ocupavel31": 628.32, "area_ocupavel40": 810.73},
+    {"polegada": '2 1/2"', "diametro_mm": 65.00, "area_total": 3318.31,
+      "area_ocupavel53":1758.70, "area_ocupavel31": 1028.68, "area_ocupavel40": 1327.32},
+    {"polegada": '3"', "diametro_mm": 76.2 , "area_total": 4560.37,
+      "area_ocupavel53":2416.99, "area_ocupavel31": 1413.71, "area_ocupavel40": 1824.15},
+    {"polegada": '4"', "diametro_mm": 101.6, "area_total": 8107.32,
+      "area_ocupavel53": 4296.88, "area_ocupavel31": 2513.27, "area_ocupavel40": 3242.93}
 
 ]
 
@@ -244,13 +252,20 @@ def area_condutor_por_tipo(tipo, bitola):
             return c.get("area_mm2", 0.0)
     return None
 
-def encontrar_eletroduto(area_total):
-    for e in sorted(eletrodutos, key=lambda x: x["area_util"]):
-        if area_total <= e["area_util"]:
-            return e
-    return None
 
 
+def encontrar_eletroduto(area_total, n_condutores):
+    if n_condutores == 1:
+        chave = "area_ocupavel53"
+    elif n_condutores == 2:
+        chave = "area_ocupavel31"
+    else:
+        chave = "area_ocupavel40"
+
+    for e in sorted(eletrodutos, key=lambda x: x[chave]):
+        if area_total <= e[chave]:
+            return e, chave
+    return None, chave
 
 #=========================
 
@@ -258,112 +273,168 @@ def encontrar_eletroduto(area_total):
 
 #=========================
 
+aba1, aba2 = st.tabs(["⚡ Calculadora ", "📘 Sobre/ Ajuda"])
 
-st.set_page_config(page_title="Dimensionamento de Eletrodutos", page_icon="⚡", layout="centered")
-st.markdown(
-    """
-    <h1 style="text-align:center;color:#1E90FF;">⚡ Dimensionamento de Eletrodutos</h1>
-    <p style="text-align: center; color: gray;">Ferramenta para cálculo da ocupação de condutores em eletrodutos</p>
-<hr>
-""",
-unsafe_allow_html=True
-)
-#st.write("Adicione os condutores da instalação e clique em **Calcular eletroduto**.")
+with aba1:
 
-# inicializações do session_state
-if "condutores_lista" not in st.session_state:
-    st.session_state.condutores_lista = []
+    st.set_page_config(page_title="Dimensionamento de Eletrodutos", page_icon="⚡", layout="centered")
+    st.markdown(
+        """
+        <h1 style="text-align:center;color:#1E90FF;">⚡ Dimensionamento de Eletrodutos</h1>
+        <p style="text-align: center; color: gray;">Ferramenta para cálculo da ocupação de condutores em eletrodutos</p>
+    <hr>
+    """,
+    unsafe_allow_html=True
+    )
+    #st.write("Adicione os condutores da instalação e clique em **Calcular eletroduto**.")
 
-#aba1, aba2 = st.tabs(["📥Inserir Dados", "📊Resultados"])
+    # inicializações do session_state
+    if "condutores_lista" not in st.session_state:
+        st.session_state.condutores_lista = []
 
-# --- WIDGETS (com 'key' para poder resetar) ---
-# tipo_condutor
-st.selectbox("Tipo de condutor", options=list(condutores.keys()), key="tipo_condutor")
+    #aba1, aba2 = st.tabs(["📥Inserir Dados", "📊Resultados"])
 
-# atualiza opções de bitola com base no tipo selecionado
-bitolas_disponiveis = [c["bitola"] for c in condutores[st.session_state.tipo_condutor]]
+    # --- WIDGETS (com 'key' para poder resetar) ---
+    # tipo_condutor
+    st.selectbox("Tipo de condutor", options=list(condutores.keys()), key="tipo_condutor")
 
-# garante default válido para 'bitola' no session_state (só cria antes do widget, não modifica depois)
-if "bitola" not in st.session_state or str(st.session_state.bitola) not in [str(x) for x in bitolas_disponiveis]:
-    st.session_state.bitola = bitolas_disponiveis[0]
+    # atualiza opções de bitola com base no tipo selecionado
+    bitolas_disponiveis = [c["bitola"] for c in condutores[st.session_state.tipo_condutor]]
 
-st.selectbox("Seção transversal mm² (bitola)", options=bitolas_disponiveis, key="bitola")
+    # garante default válido para 'bitola' no session_state (só cria antes do widget, não modifica depois)
+    if "bitola" not in st.session_state or str(st.session_state.bitola) not in [str(x) for x in bitolas_disponiveis]:
+        st.session_state.bitola = bitolas_disponiveis[0]
 
-# quantidade controlada
-if "quantidade" not in st.session_state:
-    st.session_state.quantidade = 1
-st.number_input("Quantidade", min_value=1, key="quantidade")
+    st.selectbox("Seção transversal mm² (bitola)", options=bitolas_disponiveis, key="bitola")
 
-# --- AÇÃO: adicionar condutor ---
-if st.button("➕ Adicionar condutor"):
-    # armazena tupla (tipo, bitola, quantidade)
-    st.session_state.condutores_lista.append((st.session_state.tipo_condutor, st.session_state.bitola, st.session_state.quantidade))
-    st.success(f"Adicionado: {st.session_state.quantidade} x {st.session_state.bitola} ({st.session_state.tipo_condutor})")
+    # quantidade controlada
+    if "quantidade" not in st.session_state:
+        st.session_state.quantidade = 1
+    st.number_input("Quantidade", min_value=1, key="quantidade")
 
-# --- Mostrar lista adicionada (desempacotar 3 valores) ---
-if st.session_state.condutores_lista:
-    st.markdown("### 📋 Condutores adicionados")
-    #for tipo, b, q in st.session_state.condutores_lista:
-        #st.write(f" - {q} x {b} mm² ({tipo})")
+    # --- AÇÃO: adicionar condutor ---
+    if st.button("➕ Adicionar condutor"):
+        # armazena tupla (tipo, bitola, quantidade)
+        st.session_state.condutores_lista.append((st.session_state.tipo_condutor, st.session_state.bitola, st.session_state.quantidade))
+        st.success(f"Adicionado: {st.session_state.quantidade} x {st.session_state.bitola} ({st.session_state.tipo_condutor})")
 
-# Exibir tabela com botão de remover
-for idx, (tipo, bitola, quantidade) in enumerate(st.session_state.condutores_lista):
-    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-    with col1:
-        st.write(tipo)
-    with col2:
-        st.write(f"{bitola} mm²")
-    with col3:
-        st.write(f"{quantidade} un.")
-    with col4:
-        if st.button("❌", key=f"remove_{idx}"):
-            st.session_state.condutores_lista.pop(idx)
-            st.rerun()
+    # --- Mostrar lista adicionada (desempacotar 3 valores) ---
+    if st.session_state.condutores_lista:
+        st.markdown("### 📋 Condutores adicionados")
+        #for tipo, b, q in st.session_state.condutores_lista:
+            #st.write(f" - {q} x {b} mm² ({tipo})")
 
-# --- Calcular eletroduto somando todos os itens da lista ---
-if st.button("⚙️ Calcular eletroduto"):
-    if not st.session_state.condutores_lista:
-        st.warning("Adicione ao menos um condutor antes de calcular.")
-    else:
-        area_total = 0.0
-        missing = []
-        # percorre todos os itens adicionados
-        for tipo, b, q in st.session_state.condutores_lista:
-            area_item = area_condutor_por_tipo(tipo, b)
-            if area_item is None:
-                missing.append((tipo, b))
-            else:
-                area_total += area_item * q
+    # Exibir tabela com botão de remover
+    for idx, (tipo, bitola, quantidade) in enumerate(st.session_state.condutores_lista):
+        col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+        with col1:
+            st.write(tipo)
+        with col2:
+            st.write(f"{bitola} mm²")
+        with col3:
+            st.write(f"{quantidade} un.")
+        with col4:
+            if st.button("❌", key=f"remove_{idx}"):
+                st.session_state.condutores_lista.pop(idx)
+                st.rerun()
 
-        if missing:
-            st.error(f"Não encontrei os seguintes condutores na tabela: {missing}. Verifique a seleção.")
+    # --- Calcular eletroduto somando todos os itens da lista ---
+    if st.button("⚙️ Calcular eletroduto"):
+        if not st.session_state.condutores_lista:
+            st.warning("Adicione ao menos um condutor antes de calcular.")
         else:
-            st.success(f"Área total ocupada: {area_total:.2f} mm²")
-            eletro = encontrar_eletroduto(area_total)
-            if eletro:
-                utilizacao = area_total / eletro["area_util"] * 100
-                st.success(f"Eletroduto Permitido: {eletro['polegada']}") 
-                st.success(f"Área Ocupável do eletroduto (40%) {eletro['area_util']:.2f} mm²") 
-                # — Utilização: {utilizacao:.1f}%")
+            area_total = 0.0
+            total_condutores = 0
+            missing = []
+
+            # percorre todos os itens adicionados
+            for tipo, b, q in st.session_state.condutores_lista:
+                area_item = area_condutor_por_tipo(tipo, b)
+                if area_item is None:
+                    missing.append((tipo, b))
+                else:
+                    area_total += area_item * q
+                    total_condutores += q
+
+            if missing:
+                st.error(f"Não encontrei os seguintes condutores na tabela: {missing}. Verifique a seleção.")
             else:
-                st.error("⚠️ Nenhum eletroduto disponível comporta essa área total. Considere múltiplos dutos ou verifique suas entradas.")
+                st.success(f"Área total ocupada: {area_total:.2f} mm²")
+                eletro, chave = encontrar_eletroduto(area_total, total_condutores)
+                if eletro:
+                    percentual = chave.replace("area_ocupavel", "")
+                    st.success(f"Eletroduto Permitido: {eletro['polegada']}") 
+                    st.success(f"Área Ocupável ({percentual}%) -> {eletro[chave]:.2f} mm²") 
+                    utilizacao = (area_total / eletro[chave]) * 100
+                    st.info(f"Utilização da capacidade: {utilizacao:.1f}%")
+                    st.info("📘 Cálculo conforme critérios de ocupação da NBR 5410:2004")
+                    
+                    # — Utilização: {utilizacao:.1f}%")
+                else:
+                    st.error("⚠️ Nenhum eletroduto disponível comporta essa área total. Considere múltiplos dutos ou verifique suas entradas.")
 
-# --- Reset: remover chaves dos widgets e limpar a lista ---
-st.markdown("---")
-if st.button("🔄 Novo Cálculo"):
-    for k in ["tipo_condutor", "bitola", "quantidade", "condutores_lista"]:
-        if k in st.session_state:
-            del st.session_state[k]
-            #st.session_state.condutores_lista = []
-    # REMOVER as chaves que estão ligadas aos widgets para que, ao rerun, os widgets iniciem com os defaults
-    st.rerun()
+    # --- Reset: remover chaves dos widgets e limpar a lista ---
+    st.markdown("---")
+    if st.button("🔄 Novo Cálculo"):
+        for k in ["tipo_condutor", "bitola", "quantidade", "condutores_lista"]:
+            if k in st.session_state:
+                del st.session_state[k]
+                #st.session_state.condutores_lista = []
+        # REMOVER as chaves que estão ligadas aos widgets para que, ao rerun, os widgets iniciem com os defaults
+        st.rerun()
+        
+
+    #===========================
+
+    # RODAPÉ
+
+    # =========================    
+
+
+    st.markdown("<hr><p style='text-align: center; color: gray;'>Desenvolvido por Deivison Dias ⚡<p/>", unsafe_allow_html=True)
+
+#============================
+
+# PÁGINA SOBRE/ AJUDA
+
+#============================
+
+with aba2:
+    st.markdown("""
+                ## 📘 Sobre esta ferramenta
     
+    Esta aplicação foi desenvolvida para auxiliar no **dimensionamento de eletrodutos**,
+    considerando as taxas máximas de ocupação de **53%, 31%, 40%** da área interna do eletroduto, conforme
+    estabelecido na **NBR 5410:2004**.
+    
+    ---
+    ### ✅ Pontos aplicados da NBR 5410
+    
+    - **Taxa de Ocupação dos eletrodutos**  
+      *Item 6.2.11.1.6 – NBR 5410:2004*
+        - 53% -> 1 condutor
+        - 31% -> 2 condutores
+        - 40% -> 3 ou mais condutores
+                
+    - **Limites de trechos contínuos de tubulação sem interposição de caixas ou equipamentos:**
+        - 15 m em áreas internas
+        - 30 m em áreas externas
+        - Redução de 3 m para cada curva de 90°
+                
+    
+    - **Classes e temperaturas dos cabos**  
+      Condutores isolados em **PVC (70 °C)** e **XLPE (90 °C)** são considerados,
+      conforme tabelas da NBR 5410.  
+    
+    ---
+    ### ⚠️ Aviso de responsabilidade
+    
+    Esta ferramenta é um **apoio técnico**.  
+    O resultado deve ser sempre analisado por um **profissional habilitado**, considerando
+    as condições específicas da instalação.
+    
+    ---
+    🔗 Para mais informações, consulte a norma completa: **ABNT NBR 5410:2004**.
+    """)
 
-#===========================
-
-# RODAPÉ
-
-# =========================    
-
-
-st.markdown("<hr><p style='text-align: center; color: gray;'>Desenvolvido por Deivison Dias ⚡<p/>", unsafe_allow_html=True)
+    st.info("📘 Cálculo conforme critérios de ocupação pela NBR 5410:2004")
